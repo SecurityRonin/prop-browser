@@ -10,6 +10,50 @@ All notable changes to this project are documented here. The format follows
 
 - **Homebrew Cask** auto-publish to a personal tap (recipe documented; tap repo pending).
 
+## [0.3.0] - 2026-08-09
+
+### Added
+
+- **The borderless window can be moved.** It loads a page we don't own into a frameless
+  window and none of our own chrome, so there was no `-webkit-app-region: drag` handle
+  anywhere on it and nothing set `x`/`y` — the window was stuck wherever Electron first
+  put it. Three ways out, all working in both modes and inert in fullscreen/kiosk:
+  - **Right-drag** anywhere picks the window up; **Escape** mid-drag returns it to where
+    the drag began.
+  - **Alt + arrow** nudges 1 px, **Alt + Shift + arrow** 10 px, for final framing.
+  - **`X` / `Y`, `--x` / `--y`, or `x` / `y` in a scene file** place it outright —
+    signed, so displays left of or above the primary are reachable. The pair is
+    all-or-nothing; a lone coordinate falls back to the OS's placement.
+
+  The gestures are classified in the main process from Chromium's `before-mouse-event`
+  and `before-input-event` (both pre-dispatch and cancellable, Electron 37+ for the
+  former) and then cancelled, so the loaded page never receives the grab, never scrolls
+  on our arrow keys, and is not modified — which is what makes this safe on a third-party
+  page. The decisions live in `src/move.js` under the 100% coverage gate; `electron/main.js`
+  only wires them.
+
+  The drag is the **right** button rather than the expected Alt+drag because Electron 43
+  emits no `modifiers` on `before-mouse-event` or `input-event` — measured, an Alt+click
+  payload is identical to a plain one, so a modifier chord is undetectable on the mouse
+  channel. (`modifiers` is on the `MouseInputEvent` structure because that type is also
+  the _input_ to `webContents.sendInputEvent`.) `button` is reported reliably, so it is
+  the discriminator, and the left button stays entirely the page's.
+
+  Verified end to end on **macOS and Windows** by synthesizing real input and reading the
+  resulting window position back from the OS — on macOS, Quartz `CGEvent` into the HID tap
+  measured by `CGWindowListCopyWindowInfo`; on Windows 11 ARM64 (build 26200, Electron
+  win32-arm64), `mouse_event`/`keybd_event` measured by
+  `DwmGetWindowAttribute(DWMWA_EXTENDED_FRAME_BOUNDS)`. Both platforms pass all of:
+  placement honours `--x`/`--y`, a plain left-drag does _not_ move the window (the negative
+  control), a right-drag moves it by exactly the cursor delta, the window stops following
+  after mouse-up, and the two nudges move 1 px and 10 px.
+
+  Two Windows measurement notes, neither a defect in this change: `GetWindowRect` reports
+  the window ~8 px wider on each side than it looks, because it counts the invisible
+  resize border — `DWMWA_EXTENDED_FRAME_BOUNDS` gives the visible frame. And Windows
+  clamps a window taller than the monitor work area, so an oversized `HEIGHT` comes back
+  smaller than requested.
+
 ## [0.2.2] - 2026-08-05
 
 ### Added

@@ -7,7 +7,43 @@ describe('parseCli', () => {
 
   it('returns defaults when no extra args are given', () => {
     const cli = parseCli([electron, app]);
-    expect(cli).toEqual({ sceneFile: null, screenshot: null, borderless: false, url: null });
+    expect(cli).toEqual({
+      sceneFile: null,
+      screenshot: null,
+      borderless: false,
+      url: null,
+      x: null,
+      y: null,
+    });
+  });
+
+  it('parses --x/--y with following values', () => {
+    const cli = parseCli([electron, app, '--x', '120', '--y', '48']);
+    expect(cli).toMatchObject({ x: 120, y: 48 });
+  });
+
+  it('parses --x=/--y= (equals form)', () => {
+    expect(parseCli([electron, app, '--x=0', '--y=0'])).toMatchObject({ x: 0, y: 0 });
+  });
+
+  it('accepts negative coordinates (a display left of or above the primary)', () => {
+    expect(parseCli([electron, app, '--x', '-1920', '--y=-100'])).toMatchObject({
+      x: -1920,
+      y: -100,
+    });
+  });
+
+  it('ignores --x/--y with a non-numeric or missing value', () => {
+    expect(parseCli([electron, app, '--x', 'left']).x).toBeNull();
+    expect(parseCli([electron, app, '--x']).x).toBeNull();
+    expect(parseCli([electron, app, '--x', '--borderless'])).toMatchObject({
+      x: null,
+      borderless: true,
+    });
+  });
+
+  it('does not mistake an --x value for a scene file', () => {
+    expect(parseCli([electron, app, '--x', '10', 'hero.json']).sceneFile).toBe('hero.json');
   });
 
   it('parses --borderless', () => {

@@ -1,6 +1,6 @@
 {
   "name": "prop-window",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "private": true,
   "description": "A film prop window — real Chromium (Electron) whose address bar shows any URL you set, fully decoupled from the page it loads.",
   "type": "module",

@@ -1,7 +1,10 @@
 const STRING_FIELDS = ['loadUrl', 'displayUrl', 'title', 'favicon'];
 const BOOL_FIELDS = ['secure', 'fullscreen', 'kiosk'];
 const INT_FIELDS = ['width', 'height'];
-const ALL_FIELDS = new Set([...STRING_FIELDS, ...BOOL_FIELDS, ...INT_FIELDS]);
+// Window position: signed, so 0 and negatives are legal (a display left of or
+// above the primary) — which is why it cannot share INT_FIELDS' positive rule.
+const SIGNED_INT_FIELDS = ['x', 'y'];
+const ALL_FIELDS = new Set([...STRING_FIELDS, ...BOOL_FIELDS, ...INT_FIELDS, ...SIGNED_INT_FIELDS]);
 
 export function parseScene(raw) {
   if (raw === null || typeof raw !== 'object' || Array.isArray(raw)) {
@@ -23,6 +26,11 @@ export function parseScene(raw) {
     } else if (INT_FIELDS.includes(key)) {
       if (typeof val !== 'number' || !Number.isInteger(val) || val <= 0) {
         throw new TypeError(`${key} must be a positive integer`);
+      }
+      scene[key] = val;
+    } else if (SIGNED_INT_FIELDS.includes(key)) {
+      if (typeof val !== 'number' || !Number.isInteger(val)) {
+        throw new TypeError(`${key} must be an integer`);
       }
       scene[key] = val;
     }

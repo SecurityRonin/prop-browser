@@ -16,6 +16,13 @@ function positiveIntOr(value, fallback) {
   return Number.isInteger(n) && n > 0 ? n : fallback;
 }
 
+// Window position is signed, unlike width/height: 0 is a valid coordinate and
+// negatives address a display left of or above the primary one.
+function intOr(value, fallback) {
+  const n = parseInt(value, 10);
+  return Number.isInteger(n) ? n : fallback;
+}
+
 /**
  * @param {Record<string,string>} env      process.env (or a subset)
  * @param {object} defaults                 overrides for the built-in defaults
@@ -65,5 +72,8 @@ export function parseConfig(env = {}, defaults = {}, scene = {}) {
     borderless,
     width: positiveIntOr(env.WIDTH, s.width || d.width),
     height: positiveIntOr(env.HEIGHT, s.height || d.height),
+    // null means "unpositioned" — let the OS place the window.
+    x: intOr(env.X, s.x === undefined ? null : s.x),
+    y: intOr(env.Y, s.y === undefined ? null : s.y),
   };
 }
