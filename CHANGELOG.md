@@ -6,6 +6,37 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- **The borderless window can be moved.** It loads a page we don't own into a frameless
+  window and none of our own chrome, so there was no `-webkit-app-region: drag` handle
+  anywhere on it and nothing set `x`/`y` — the window was stuck wherever Electron first
+  put it. Three ways out, all working in both modes and inert in fullscreen/kiosk:
+  - **Right-drag** anywhere picks the window up; **Escape** mid-drag returns it to where
+    the drag began.
+  - **Alt + arrow** nudges 1 px, **Alt + Shift + arrow** 10 px, for final framing.
+  - **`X` / `Y`, `--x` / `--y`, or `x` / `y` in a scene file** place it outright —
+    signed, so displays left of or above the primary are reachable. The pair is
+    all-or-nothing; a lone coordinate falls back to the OS's placement.
+
+  The gestures are classified in the main process from Chromium's `before-mouse-event`
+  and `before-input-event` (both pre-dispatch and cancellable, Electron 37+ for the
+  former) and then cancelled, so the loaded page never receives the grab, never scrolls
+  on our arrow keys, and is not modified — which is what makes this safe on a third-party
+  page. The decisions live in `src/move.js` under the 100% coverage gate; `electron/main.js`
+  only wires them.
+
+  The drag is the **right** button rather than the expected Alt+drag because Electron 43
+  emits no `modifiers` on `before-mouse-event` or `input-event` — measured, an Alt+click
+  payload is identical to a plain one, so a modifier chord is undetectable on the mouse
+  channel. (`modifiers` is on the `MouseInputEvent` structure because that type is also
+  the _input_ to `webContents.sendInputEvent`.) `button` is reported reliably, so it is
+  the discriminator, and the left button stays entirely the page's.
+
+  Verified end to end on macOS by synthesizing real HID input (Quartz `CGEvent`) and
+  reading the resulting window position back from the window server — including the
+  negative control that a plain left-drag does _not_ move the window.
+
 ### Deferred
 
 - **Homebrew Cask** auto-publish to a personal tap (recipe documented; tap repo pending).

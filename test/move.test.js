@@ -65,33 +65,33 @@ describe('classifyNudge', () => {
 });
 
 describe('isDragStart', () => {
-  it('is an Alt + left mouse-down', () => {
-    expect(isDragStart({ type: 'mouseDown', button: 'left', modifiers: ['alt'] })).toBe(true);
+  it('is a right-button mouse-down', () => {
+    expect(isDragStart({ type: 'mouseDown', button: 'right' })).toBe(true);
   });
 
-  it('tolerates other modifiers riding along', () => {
-    expect(
-      isDragStart({ type: 'mouseDown', button: 'left', modifiers: ['shift', 'alt'] }),
-    ).toBe(true);
-  });
-
-  it('is not a plain left mouse-down, so the page keeps its own clicks', () => {
-    expect(isDragStart({ type: 'mouseDown', button: 'left', modifiers: [] })).toBe(false);
-  });
-
-  it('is not a right or middle button', () => {
-    expect(isDragStart({ type: 'mouseDown', button: 'right', modifiers: ['alt'] })).toBe(false);
-    expect(isDragStart({ type: 'mouseDown', button: 'middle', modifiers: ['alt'] })).toBe(false);
-  });
-
-  it('is not a move or an up', () => {
-    expect(isDragStart({ type: 'mouseMove', button: 'left', modifiers: ['alt'] })).toBe(false);
-    expect(isDragStart({ type: 'mouseUp', button: 'left', modifiers: ['alt'] })).toBe(false);
-  });
-
-  it('survives a missing event or missing modifiers', () => {
-    expect(isDragStart(undefined)).toBe(false);
+  it('is never the left button, which stays the page’s', () => {
     expect(isDragStart({ type: 'mouseDown', button: 'left' })).toBe(false);
+  });
+
+  it('ignores a modifiers field even when one is present', () => {
+    // Electron 43 does not emit `modifiers` on mouse events at all; an Alt+click
+    // payload is identical to a plain one, so nothing may depend on it.
+    expect(isDragStart({ type: 'mouseDown', button: 'left', modifiers: ['alt'] })).toBe(false);
+  });
+
+  it('is not a middle button', () => {
+    expect(isDragStart({ type: 'mouseDown', button: 'middle' })).toBe(false);
+  });
+
+  it('is not a move, an up, or a leave', () => {
+    expect(isDragStart({ type: 'mouseMove', button: 'right' })).toBe(false);
+    expect(isDragStart({ type: 'mouseUp', button: 'right' })).toBe(false);
+    expect(isDragStart({ type: 'mouseLeave', button: 'none' })).toBe(false);
+  });
+
+  it('survives a missing event or missing button', () => {
+    expect(isDragStart(undefined)).toBe(false);
+    expect(isDragStart({ type: 'mouseDown' })).toBe(false);
   });
 });
 

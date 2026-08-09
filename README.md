@@ -52,17 +52,18 @@ notarized distribution builds are deferred (see CHANGELOG).
 
 ## Configure per shot (environment variables)
 
-| Var                | Meaning                                      | Default                   |
-| ------------------ | -------------------------------------------- | ------------------------- |
-| `LOAD_URL`         | content actually fetched                     | bundled welcome page      |
-| `DISPLAY_URL`      | URL shown in the address bar (the spoof)     | `https://www.example.com` |
-| `TITLE`            | tab title                                    | `New Tab`                 |
-| `FAVICON`          | emoji, or an image URL                       | `🌐`                      |
-| `SECURE`           | `0` → "Not secure"; else padlock             | padlock                   |
-| `FULLSCREEN`       | `1` → fullscreen (only our chrome on camera) | off                       |
-| `KIOSK`            | `1` → kiosk (no escape chrome)               | off                       |
-| `BORDERLESS`       | `1` → drop our chrome; page draws its frame  | off                       |
-| `WIDTH` / `HEIGHT` | windowed size                                | `1440` × `900`            |
+| Var                | Meaning                                        | Default                   |
+| ------------------ | ---------------------------------------------- | ------------------------- |
+| `LOAD_URL`         | content actually fetched                       | bundled welcome page      |
+| `DISPLAY_URL`      | URL shown in the address bar (the spoof)       | `https://www.example.com` |
+| `TITLE`            | tab title                                      | `New Tab`                 |
+| `FAVICON`          | emoji, or an image URL                         | `🌐`                      |
+| `SECURE`           | `0` → "Not secure"; else padlock               | padlock                   |
+| `FULLSCREEN`       | `1` → fullscreen (only our chrome on camera)   | off                       |
+| `KIOSK`            | `1` → kiosk (no escape chrome)                 | off                       |
+| `BORDERLESS`       | `1` → drop our chrome; page draws its frame    | off                       |
+| `WIDTH` / `HEIGHT` | windowed size                                  | `1440` × `900`            |
+| `X` / `Y`          | windowed position; signed, set both or neither | OS default                |
 
 ## Borderless mode (the page draws its own frame)
 
@@ -80,11 +81,12 @@ npm start -- --borderless \
 
 CLI flags (override env/scene):
 
-| Flag               | Meaning                                       |
-| ------------------ | --------------------------------------------- |
-| `--borderless`     | drop our chrome (same as `BORDERLESS=1`)      |
-| `--url <url>`      | page to load (same as `LOAD_URL`)             |
-| `--screenshot <p>` | render, capture the window to `<p>.png`, quit |
+| Flag                | Meaning                                       |
+| ------------------- | --------------------------------------------- |
+| `--borderless`      | drop our chrome (same as `BORDERLESS=1`)      |
+| `--url <url>`       | page to load (same as `LOAD_URL`)             |
+| `--x <n>` `--y <n>` | window position (same as `X` / `Y`)           |
+| `--screenshot <p>`  | render, capture the window to `<p>.png`, quit |
 
 A packaged Windows `.exe` launches the same way — pass the flags in the shortcut's
 _Target_:
@@ -106,6 +108,33 @@ prop-window.exe --borderless --url "https://…/kali-window.html?app=osint-nexus
   - **Shift+Enter** → actually navigate the content to the typed URL.
 - **Back / Forward / Reload** drive the real content view.
 - The top strip is a window-drag handle when not fullscreen.
+
+### Moving the window
+
+Borderless mode has no chrome of ours to grab and the page is someone else's, so the
+window is moved from outside the page entirely — the gestures are read before Chromium
+hands the event to the page, and then cancelled, so the page never sees them and is
+never altered. They work in both modes, and do nothing in fullscreen or kiosk.
+
+| Gesture                 | Effect                              |
+| ----------------------- | ----------------------------------- |
+| **Right-drag**          | pick the window up anywhere on it   |
+| **Escape** mid-drag     | drop it back where the drag started |
+| **Alt + arrow**         | nudge 1 px — for final framing      |
+| **Alt + Shift + arrow** | nudge 10 px                         |
+
+The _right_ button, not a modifier chord, because Electron reports no modifier state on
+mouse events — an Alt+click is indistinguishable from a plain one. The left button
+therefore stays entirely the page's, and the right-press is swallowed before the page
+sees it, so no context menu appears on camera.
+
+For a position that survives a reshoot, don't drag — set it: `X` / `Y`, `--x` / `--y`,
+or `x` / `y` in a scene file. Coordinates are signed, so a display left of or above the
+primary one is reachable with negatives.
+
+```bash
+npm start -- --borderless --url "https://…/kali-window.html" --x 320 --y 180
+```
 
 ## Trust but verify
 
