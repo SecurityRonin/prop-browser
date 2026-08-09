@@ -6,6 +6,12 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Deferred
+
+- **Homebrew Cask** auto-publish to a personal tap (recipe documented; tap repo pending).
+
+## [0.3.0] - 2026-08-09
+
 ### Added
 
 - **The borderless window can be moved.** It loads a page we don't own into a frameless
@@ -47,10 +53,6 @@ All notable changes to this project are documented here. The format follows
   resize border — `DWMWA_EXTENDED_FRAME_BOUNDS` gives the visible frame. And Windows
   clamps a window taller than the monitor work area, so an oversized `HEIGHT` comes back
   smaller than requested.
-
-### Deferred
-
-- **Homebrew Cask** auto-publish to a personal tap (recipe documented; tap repo pending).
 
 ## [0.2.2] - 2026-08-05
 
