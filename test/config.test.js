@@ -14,7 +14,27 @@ describe('parseConfig', () => {
       borderless: false,
       width: 1440,
       height: 900,
+      x: null,
+      y: null,
     });
+  });
+
+  it('reads an explicit window position from the environment', () => {
+    expect(parseConfig({ X: '120', Y: '48' })).toMatchObject({ x: 120, y: 48 });
+  });
+
+  it('accepts zero and negative coordinates (unlike width/height)', () => {
+    expect(parseConfig({ X: '0', Y: '0' })).toMatchObject({ x: 0, y: 0 });
+    expect(parseConfig({ X: '-1920', Y: '-100' })).toMatchObject({ x: -1920, y: -100 });
+  });
+
+  it('falls back to unpositioned when X/Y are not numbers', () => {
+    expect(parseConfig({ X: 'left', Y: '' })).toMatchObject({ x: null, y: null });
+  });
+
+  it('takes the window position from a scene, with the environment winning', () => {
+    expect(parseConfig({}, {}, { x: 10, y: 20 })).toMatchObject({ x: 10, y: 20 });
+    expect(parseConfig({ X: '99' }, {}, { x: 10, y: 20 })).toMatchObject({ x: 99, y: 20 });
   });
 
   it('works with no arguments at all', () => {

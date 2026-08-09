@@ -18,6 +18,8 @@ describe('parseScene', () => {
     expect(scene.height).toBeUndefined();
     expect(scene.fullscreen).toBeUndefined();
     expect(scene.kiosk).toBeUndefined();
+    expect(scene.x).toBeUndefined();
+    expect(scene.y).toBeUndefined();
   });
 
   it('passes through all recognized fields', () => {
@@ -31,9 +33,22 @@ describe('parseScene', () => {
       height: 1080,
       fullscreen: true,
       kiosk: false,
+      x: 120,
+      y: 48,
     };
     const scene = parseScene(input);
     expect(scene).toEqual(input);
+  });
+
+  it('accepts zero and negative window coordinates, unlike width/height', () => {
+    expect(parseScene({ x: 0, y: 0 })).toEqual({ x: 0, y: 0 });
+    expect(parseScene({ x: -1920, y: -100 })).toEqual({ x: -1920, y: -100 });
+  });
+
+  it('rejects x/y that are not integers', () => {
+    expect(() => parseScene({ x: 3.5 })).toThrow(/x/);
+    expect(() => parseScene({ x: 'left' })).toThrow(/x/);
+    expect(() => parseScene({ y: null })).toThrow(/y/);
   });
 
   it('strips unrecognized fields', () => {
