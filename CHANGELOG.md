@@ -10,6 +10,35 @@ All notable changes to this project are documented here. The format follows
 
 - **Homebrew Cask** auto-publish to a personal tap (recipe documented; tap repo pending).
 
+## [0.3.1] - 2026-08-09
+
+### Changed
+
+- **The coarse nudge moved from Alt+Shift+arrow to Alt+Ctrl+arrow.** Alt+Shift+arrow never
+  reached the app on Linux/X11: the key payload shows Alt down, Shift down, Shift up, Alt
+  up and no arrow event at all, because the desktop grabs Alt+Shift as the
+  keyboard-layout chord. Shift now carries no meaning, so Alt+Shift+arrow is simply a
+  1 px nudge. Alt+arrow is unchanged.
+
+### Fixed
+
+- **`X`/`Y`, `--x`/`--y` and scene `x`/`y` were ignored on Linux.** X11 window managers
+  place a window themselves when it is mapped and overrule the constructor's coordinates
+  — measured on Ubuntu 24.04 under openbox, where a window asked for 320,180 mapped at
+  152,96. `setPosition` is honoured once the window exists (which is why dragging always
+  worked), so the requested position is now re-applied when the window appears. Verified
+  in the VM: the same launch that produced 152,96 now lands on the requested 320.
+  macOS and Windows were never affected.
+
+### Documentation
+
+- **Corrected the Linux support note.** 0.3.0 claimed Wayland would not work but X11
+  "should be fine"; X11 is now measured rather than assumed. Right-drag, drag-release and
+  the Alt+arrow nudge all work there. The remaining caveat is documented in the README: a
+  Wayland session needs `--ozone-platform=x11`, since Electron's ozone auto-detection
+  otherwise picks native Wayland, where positioning and cursor queries are non-functional.
+  Native Wayland move behaviour remains unverified rather than known-broken.
+
 ## [0.3.0] - 2026-08-09
 
 ### Added

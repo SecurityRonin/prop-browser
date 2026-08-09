@@ -116,12 +116,12 @@ window is moved from outside the page entirely — the gestures are read before 
 hands the event to the page, and then cancelled, so the page never sees them and is
 never altered. They work in both modes, and do nothing in fullscreen or kiosk.
 
-| Gesture                 | Effect                              |
-| ----------------------- | ----------------------------------- |
-| **Right-drag**          | pick the window up anywhere on it   |
-| **Escape** mid-drag     | drop it back where the drag started |
-| **Alt + arrow**         | nudge 1 px — for final framing      |
-| **Alt + Shift + arrow** | nudge 10 px                         |
+| Gesture                | Effect                              |
+| ---------------------- | ----------------------------------- |
+| **Right-drag**         | pick the window up anywhere on it   |
+| **Escape** mid-drag    | drop it back where the drag started |
+| **Alt + arrow**        | nudge 1 px — for final framing      |
+| **Alt + Ctrl + arrow** | nudge 10 px                         |
 
 The _right_ button, not a modifier chord, because Electron reports no modifier state on
 mouse events — an Alt+click is indistinguishable from a plain one. The left button
@@ -131,6 +131,11 @@ sees it, so no context menu appears on camera.
 For a position that survives a reshoot, don't drag — set it: `X` / `Y`, `--x` / `--y`,
 or `x` / `y` in a scene file. Coordinates are signed, so a display left of or above the
 primary one is reachable with negatives.
+
+**On Linux**, run under X11 — pass `--ozone-platform=x11` if your desktop is Wayland,
+where Electron cannot position or move a window at all. Window managers also place
+windows themselves, so the requested `x`/`y` is re-applied once the window appears
+rather than at creation.
 
 ```bash
 npm start -- --borderless --url "https://…/kali-window.html" --x 320 --y 180

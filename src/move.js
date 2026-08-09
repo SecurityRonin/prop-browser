@@ -26,18 +26,23 @@ const ARROWS = new Map([
 
 /**
  * Classify an Electron `before-input-event` input as a window nudge:
- *   - Alt+Arrow       -> one pixel
- *   - Alt+Shift+Arrow -> ten pixels
- *   - anything else   -> null (the page keeps the key)
+ *   - Alt+Arrow      -> one pixel
+ *   - Alt+Ctrl+Arrow -> ten pixels
+ *   - anything else  -> null (the page keeps the key)
  *
- * @param {{type?: string, key?: string, alt?: boolean, shift?: boolean}} input
+ * Ctrl rather than Shift for the coarse step: Alt+Shift+Arrow never reaches the
+ * app on Linux/X11 — measured on Ubuntu 24.04, where the arrow key event simply
+ * never arrives because the desktop grabs Alt+Shift as the keyboard-layout
+ * chord. Shift is therefore ignored here.
+ *
+ * @param {{type?: string, key?: string, alt?: boolean, control?: boolean}} input
  * @returns {{dx: number, dy: number}|null} offset in DIP
  */
 export function classifyNudge(input) {
   if (!input || input.type !== 'keyDown' || !input.alt) return null;
   const dir = ARROWS.get(input.key);
   if (!dir) return null;
-  const step = input.shift ? NUDGE_STEP_COARSE : NUDGE_STEP;
+  const step = input.control ? NUDGE_STEP_COARSE : NUDGE_STEP;
   return { dx: dir.dx * step, dy: dir.dy * step };
 }
 

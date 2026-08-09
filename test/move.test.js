@@ -30,14 +30,26 @@ describe('classifyNudge', () => {
     });
   });
 
-  it('Alt+Shift+Arrow nudges by the coarse step', () => {
-    expect(classifyNudge({ type: 'keyDown', key: 'ArrowRight', alt: true, shift: true })).toEqual({
-      dx: NUDGE_STEP_COARSE,
-      dy: 0,
-    });
-    expect(classifyNudge({ type: 'keyDown', key: 'ArrowUp', alt: true, shift: true })).toEqual({
+  it('Alt+Ctrl+Arrow nudges by the coarse step', () => {
+    expect(classifyNudge({ type: 'keyDown', key: 'ArrowRight', alt: true, control: true })).toEqual(
+      {
+        dx: NUDGE_STEP_COARSE,
+        dy: 0,
+      },
+    );
+    expect(classifyNudge({ type: 'keyDown', key: 'ArrowUp', alt: true, control: true })).toEqual({
       dx: 0,
       dy: -NUDGE_STEP_COARSE,
+    });
+  });
+
+  it('ignores Shift, which Linux desktops swallow as the layout chord', () => {
+    // Alt+Shift+Arrow never reaches the app on X11 — measured on Ubuntu 24.04,
+    // where the ArrowDown event simply never arrives. Shift therefore carries no
+    // meaning here, and Alt+Shift+Arrow is just a fine nudge.
+    expect(classifyNudge({ type: 'keyDown', key: 'ArrowRight', alt: true, shift: true })).toEqual({
+      dx: NUDGE_STEP,
+      dy: 0,
     });
   });
 

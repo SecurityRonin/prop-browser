@@ -126,6 +126,20 @@ function enableWindowMove(contentsList) {
   win.on('closed', () => stopDrag(false));
 }
 
+// Some Linux window managers place a window themselves when it is mapped and
+// ignore the constructor's x/y — measured on Ubuntu 24.04 under openbox, where a
+// window asked for 320,180 mapped at 152,96. setPosition IS honoured once the
+// window exists, so re-assert the requested position after it appears. Both
+// hooks fire because a WM can place the window later than ready-to-show.
+function applyPlacement() {
+  if (!win || cfg.x === null || cfg.y === null) return;
+  const place = () => {
+    if (win && !win.isDestroyed() && !win.isFullScreen()) win.setPosition(cfg.x, cfg.y);
+  };
+  win.once('ready-to-show', place);
+  win.webContents.once('did-finish-load', place);
+}
+
 function layout() {
   if (!win || !view) return;
   const [w, h] = win.getContentSize();
@@ -148,6 +162,7 @@ app.whenReady().then(() => {
       webPreferences: { contextIsolation: true, nodeIntegration: false },
     });
     win.loadURL(cfg.load);
+    applyPlacement();
     enableWindowMove([win.webContents]);
     if (cli.screenshot) win.webContents.on('did-finish-load', captureThenQuit);
     return;
@@ -169,6 +184,7 @@ app.whenReady().then(() => {
     },
   });
   win.loadFile(join(here, 'toolbar.html'));
+  applyPlacement();
 
   // Real top-level browser view for the page content (no iframe restrictions).
   view = new BrowserView({ webPreferences: { contextIsolation: true } });
