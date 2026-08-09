@@ -33,9 +33,20 @@ All notable changes to this project are documented here. The format follows
   the _input_ to `webContents.sendInputEvent`.) `button` is reported reliably, so it is
   the discriminator, and the left button stays entirely the page's.
 
-  Verified end to end on macOS by synthesizing real HID input (Quartz `CGEvent`) and
-  reading the resulting window position back from the window server — including the
-  negative control that a plain left-drag does _not_ move the window.
+  Verified end to end on **macOS and Windows** by synthesizing real input and reading the
+  resulting window position back from the OS — on macOS, Quartz `CGEvent` into the HID tap
+  measured by `CGWindowListCopyWindowInfo`; on Windows 11 ARM64 (build 26200, Electron
+  win32-arm64), `mouse_event`/`keybd_event` measured by
+  `DwmGetWindowAttribute(DWMWA_EXTENDED_FRAME_BOUNDS)`. Both platforms pass all of:
+  placement honours `--x`/`--y`, a plain left-drag does _not_ move the window (the negative
+  control), a right-drag moves it by exactly the cursor delta, the window stops following
+  after mouse-up, and the two nudges move 1 px and 10 px.
+
+  Two Windows measurement notes, neither a defect in this change: `GetWindowRect` reports
+  the window ~8 px wider on each side than it looks, because it counts the invisible
+  resize border — `DWMWA_EXTENDED_FRAME_BOUNDS` gives the visible frame. And Windows
+  clamps a window taller than the monitor work area, so an oversized `HEIGHT` comes back
+  smaller than requested.
 
 ### Deferred
 
