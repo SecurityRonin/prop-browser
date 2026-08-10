@@ -1,13 +1,14 @@
 import { describe, it, expect } from 'vitest';
 import { parseCli } from '../src/cli.js';
 
-describe('parseCli', () => {
-  const electron = '/usr/local/bin/electron';
-  const app = '.';
+// parseCli takes the USER-supplied CLI arguments — the executable / app-path
+// prefix (which varies between dev-mode and packaged Electron) is stripped by
+// electron/main.js before it's called. See the comment there for the argv
+// shape discrimination via `process.defaultApp`.
 
-  it('returns defaults when no extra args are given', () => {
-    const cli = parseCli([electron, app]);
-    expect(cli).toEqual({
+describe('parseCli', () => {
+  it('returns defaults when no args are given', () => {
+    expect(parseCli([])).toEqual({
       sceneFile: null,
       screenshot: null,
       borderless: false,
@@ -17,134 +18,97 @@ describe('parseCli', () => {
     });
   });
 
-  it('parses --x/--y with following values', () => {
-    const cli = parseCli([electron, app, '--x', '120', '--y', '48']);
-    expect(cli).toMatchObject({ x: 120, y: 48 });
-  });
-
-  it('parses --x=/--y= (equals form)', () => {
-    expect(parseCli([electron, app, '--x=0', '--y=0'])).toMatchObject({ x: 0, y: 0 });
-  });
-
-  it('accepts negative coordinates (a display left of or above the primary)', () => {
-    expect(parseCli([electron, app, '--x', '-1920', '--y=-100'])).toMatchObject({
-      x: -1920,
-      y: -100,
-    });
-  });
-
-  it('ignores --x/--y with a non-numeric or missing value', () => {
-    expect(parseCli([electron, app, '--x', 'left']).x).toBeNull();
-    expect(parseCli([electron, app, '--x']).x).toBeNull();
-    expect(parseCli([electron, app, '--x', '--borderless'])).toMatchObject({
-      x: null,
-      borderless: true,
-    });
-  });
-
-  it('does not mistake an --x value for a scene file', () => {
-    expect(parseCli([electron, app, '--x', '10', 'hero.json']).sceneFile).toBe('hero.json');
-  });
-
   it('parses --borderless', () => {
-    expect(parseCli([electron, app, '--borderless']).borderless).toBe(true);
+    expect(parseCli(['--borderless']).borderless).toBe(true);
   });
 
   it('parses --url with a following value', () => {
-    expect(parseCli([electron, app, '--url', 'https://x/y?z=1']).url).toBe('https://x/y?z=1');
+    expect(parseCli(['--url', 'https://x/y?z=1']).url).toBe('https://x/y?z=1');
   });
 
   it('parses --url=value (equals form)', () => {
-    expect(parseCli([electron, app, '--url=https://x/y?z=1']).url).toBe('https://x/y?z=1');
+    expect(parseCli(['--url=https://x/y?z=1']).url).toBe('https://x/y?z=1');
   });
 
   it('does not treat the --url value as a scene file', () => {
-    expect(parseCli([electron, app, '--url', 'https://x/y']).sceneFile).toBeNull();
+    expect(parseCli(['--url', 'https://x/y']).sceneFile).toBeNull();
   });
 
   it('picks up a positional .json file as the scene', () => {
-    const cli = parseCli([electron, app, 'shots/hero.json']);
-    expect(cli.sceneFile).toBe('shots/hero.json');
+    expect(parseCli(['shots/hero.json']).sceneFile).toBe('shots/hero.json');
   });
 
   it('picks up a .propscene file as the scene', () => {
-    const cli = parseCli([electron, app, 'demo.propscene']);
-    expect(cli.sceneFile).toBe('demo.propscene');
+    expect(parseCli(['demo.propscene']).sceneFile).toBe('demo.propscene');
   });
 
   it('parses --screenshot with an output path', () => {
-    const cli = parseCli([electron, app, '--screenshot', 'out.png']);
-    expect(cli.screenshot).toBe('out.png');
+    expect(parseCli(['--screenshot', 'out.png']).screenshot).toBe('out.png');
   });
 
   it('parses --screenshot=path (equals form)', () => {
-    const cli = parseCli([electron, app, '--screenshot=capture.png']);
-    expect(cli.screenshot).toBe('capture.png');
+    expect(parseCli(['--screenshot=capture.png']).screenshot).toBe('capture.png');
   });
 
   it('defaults screenshot output to screenshot.png when no path follows', () => {
-    const cli = parseCli([electron, app, '--screenshot']);
-    expect(cli.screenshot).toBe('screenshot.png');
+    expect(parseCli(['--screenshot']).screenshot).toBe('screenshot.png');
   });
 
   it('does not mistake --screenshot value for a scene file', () => {
-    const cli = parseCli([electron, app, '--screenshot', 'out.png']);
-    expect(cli.sceneFile).toBeNull();
+    expect(parseCli(['--screenshot', 'out.png']).sceneFile).toBeNull();
   });
 
   it('parses both scene file and --screenshot together', () => {
-    const cli = parseCli([electron, app, 'hero.json', '--screenshot', 'hero.png']);
+    const cli = parseCli(['hero.json', '--screenshot', 'hero.png']);
     expect(cli.sceneFile).toBe('hero.json');
     expect(cli.screenshot).toBe('hero.png');
   });
 
   it('parses --screenshot before the scene file', () => {
-    const cli = parseCli([electron, app, '--screenshot', 'out.png', 'hero.json']);
+    const cli = parseCli(['--screenshot', 'out.png', 'hero.json']);
     expect(cli.sceneFile).toBe('hero.json');
     expect(cli.screenshot).toBe('out.png');
   });
 
   it('ignores unrecognized flags', () => {
-    const cli = parseCli([electron, app, '--verbose', 'scene.json']);
-    expect(cli.sceneFile).toBe('scene.json');
+    expect(parseCli(['--verbose', 'scene.json']).sceneFile).toBe('scene.json');
   });
 
   it('does not treat a non-json/propscene positional as a scene file', () => {
-    const cli = parseCli([electron, app, 'README.md']);
-    expect(cli.sceneFile).toBeNull();
+    expect(parseCli(['README.md']).sceneFile).toBeNull();
   });
 
-  // -- Packaged Electron argv shape ------------------------------------------
-  // In a packaged build (prop-window.exe) there is no separate app-path entry
-  // in process.argv — just [exePath, ...userArgs]. process.defaultApp is
-  // undefined at runtime, matching the Node/vitest test environment, so these
-  // tests exercise the exact slice path taken by the packaged .exe.
-  describe('packaged argv shape (single exe entry)', () => {
-    const exe = 'C:\\Users\\x\\AppData\\Local\\Programs\\prop-window\\prop-window.exe';
+  it('parses --x/--y with following values', () => {
+    expect(parseCli(['--x', '120', '--y', '48'])).toMatchObject({ x: 120, y: 48 });
+  });
 
-    it('parses --borderless as the first user arg', () => {
-      expect(parseCli([exe, '--borderless']).borderless).toBe(true);
-    });
+  it('parses --x=/--y= (equals form)', () => {
+    expect(parseCli(['--x=0', '--y=0'])).toMatchObject({ x: 0, y: 0 });
+  });
 
-    it('parses --url as the first user arg', () => {
-      // Regression: pre-fix, slice(2) dropped --url and left just the URL
-      // string, which the loop then couldn't associate with any flag — so the
-      // packaged .exe silently loaded welcome.html instead of the requested URL.
-      expect(parseCli([exe, '--url', 'https://x/y']).url).toBe('https://x/y');
-    });
+  it('accepts negative coordinates (a display left of or above the primary)', () => {
+    expect(parseCli(['--x', '-1920', '--y=-100'])).toMatchObject({ x: -1920, y: -100 });
+  });
 
-    it('parses --borderless + --url together (the take-day command)', () => {
-      const cli = parseCli([exe, '--borderless', '--url', 'https://x/y?z=1']);
-      expect(cli.borderless).toBe(true);
-      expect(cli.url).toBe('https://x/y?z=1');
-    });
+  it('ignores --x/--y with a non-numeric or missing value', () => {
+    expect(parseCli(['--x', 'left']).x).toBeNull();
+    expect(parseCli(['--x']).x).toBeNull();
+    expect(parseCli(['--x', '--borderless'])).toMatchObject({ x: null, borderless: true });
+  });
 
-    it('parses --url=value equals form as first user arg', () => {
-      expect(parseCli([exe, '--url=https://x/y']).url).toBe('https://x/y');
-    });
+  it('does not mistake an --x value for a scene file', () => {
+    expect(parseCli(['--x', '10', 'hero.json']).sceneFile).toBe('hero.json');
+  });
 
-    it('picks up a positional scene file as first user arg', () => {
-      expect(parseCli([exe, 'shots/hero.json']).sceneFile).toBe('shots/hero.json');
-    });
+  // -- Regression: the take-day command that hit the packaged-argv bug --------
+  // Before the fix, electron/main.js passed process.argv straight to parseCli
+  // and parseCli did an unconditional argv.slice(2). In packaged Electron
+  // (argv = [exe, ...userArgs]) that dropped the first user flag on the floor.
+  // Now main.js pre-strips the exe entry, so parseCli sees only user args and
+  // both flags land. This test locks the shape parseCli must accept.
+  it('parses --borderless + --url together (the take-day command)', () => {
+    const cli = parseCli(['--borderless', '--url', 'https://x/y?z=1']);
+    expect(cli.borderless).toBe(true);
+    expect(cli.url).toBe('https://x/y?z=1');
   });
 });

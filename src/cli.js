@@ -9,18 +9,12 @@ function integerOrNull(text) {
   return typeof text === 'string' && INTEGER_RE.test(text) ? Number(text) : null;
 }
 
-export function parseCli(argv) {
-  // Electron's argv shape depends on how the app runs:
-  //   • dev (`electron .`):         [electronPath, appPath, ...userArgs]  → slice(2)
-  //   • packaged (prop-window.exe): [exePath,               ...userArgs]  → slice(1)
-  // Discriminated by `process.defaultApp` (truthy only in dev). Without this,
-  // packaged builds silently drop the FIRST user flag — e.g.
-  // `prop-window.exe --borderless --url X` loses `--borderless` and falls back
-  // to framed chrome. Node/vitest test runs also have process.defaultApp
-  // undefined, so existing dev-shape tests still pass — the extra "app" entry
-  // is simply skipped by the loop as neither a flag nor a scene file.
-  const packaged = typeof process === 'undefined' || !process.defaultApp;
-  const args = argv.slice(packaged ? 1 : 2);
+export function parseCli(args) {
+  // `args` is the pre-normalized user-supplied CLI arguments — the executable /
+  // app-path prefix has already been stripped by the caller. Keeping this file
+  // host-agnostic (no `process`, no Electron globals) is a deliberate invariant
+  // — see eslint.config.js: src/** is Node + browser safe, no host globals.
+  // electron/main.js does the argv shape normalization before calling in.
   let sceneFile = null;
   let screenshot = null;
   let borderless = false;

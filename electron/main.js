@@ -24,7 +24,15 @@ const here = dirname(fileURLToPath(import.meta.url));
 const TOOLBAR_H = 84; // tab strip (40) + toolbar (44); must match toolbar.html
 const DRAG_POLL_MS = 16; // ~60 Hz — matched to display refresh, not to event rate
 
-const cli = parseCli(process.argv);
+// Normalize argv shape before handing to the (host-agnostic) parser:
+//   • dev (`electron .`):         [electronPath, appPath, ...userArgs]  → slice(2)
+//   • packaged (prop-window.exe): [exePath,               ...userArgs]  → slice(1)
+// `process.defaultApp` is truthy only when Electron runs an app passed as an
+// argument (i.e., dev mode). Without this discriminator, the packaged .exe
+// silently drops the FIRST user flag — e.g. `--borderless --url X` loses
+// `--borderless` and falls back to framed chrome; `--url X` loses `--url` and
+// falls back to welcome.html.
+const cli = parseCli(process.argv.slice(process.defaultApp ? 2 : 1));
 
 let scene = {};
 if (cli.sceneFile) {
