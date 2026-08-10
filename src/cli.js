@@ -9,8 +9,12 @@ function integerOrNull(text) {
   return typeof text === 'string' && INTEGER_RE.test(text) ? Number(text) : null;
 }
 
-export function parseCli(argv) {
-  const args = argv.slice(2);
+export function parseCli(args) {
+  // `args` is the pre-normalized user-supplied CLI arguments — the executable /
+  // app-path prefix has already been stripped by the caller. Keeping this file
+  // host-agnostic (no `process`, no Electron globals) is a deliberate invariant
+  // — see eslint.config.js: src/** is Node + browser safe, no host globals.
+  // electron/main.js does the argv shape normalization before calling in.
   let sceneFile = null;
   let screenshot = null;
   let borderless = false;
