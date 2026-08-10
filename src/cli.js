@@ -10,7 +10,17 @@ function integerOrNull(text) {
 }
 
 export function parseCli(argv) {
-  const args = argv.slice(2);
+  // Electron's argv shape depends on how the app runs:
+  //   • dev (`electron .`):         [electronPath, appPath, ...userArgs]  → slice(2)
+  //   • packaged (prop-window.exe): [exePath,               ...userArgs]  → slice(1)
+  // Discriminated by `process.defaultApp` (truthy only in dev). Without this,
+  // packaged builds silently drop the FIRST user flag — e.g.
+  // `prop-window.exe --borderless --url X` loses `--borderless` and falls back
+  // to framed chrome. Node/vitest test runs also have process.defaultApp
+  // undefined, so existing dev-shape tests still pass — the extra "app" entry
+  // is simply skipped by the loop as neither a flag nor a scene file.
+  const packaged = typeof process === 'undefined' || !process.defaultApp;
+  const args = argv.slice(packaged ? 1 : 2);
   let sceneFile = null;
   let screenshot = null;
   let borderless = false;

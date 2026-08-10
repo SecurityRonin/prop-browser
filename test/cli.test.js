@@ -113,4 +113,38 @@ describe('parseCli', () => {
     const cli = parseCli([electron, app, 'README.md']);
     expect(cli.sceneFile).toBeNull();
   });
+
+  // -- Packaged Electron argv shape ------------------------------------------
+  // In a packaged build (prop-window.exe) there is no separate app-path entry
+  // in process.argv — just [exePath, ...userArgs]. process.defaultApp is
+  // undefined at runtime, matching the Node/vitest test environment, so these
+  // tests exercise the exact slice path taken by the packaged .exe.
+  describe('packaged argv shape (single exe entry)', () => {
+    const exe = 'C:\\Users\\x\\AppData\\Local\\Programs\\prop-window\\prop-window.exe';
+
+    it('parses --borderless as the first user arg', () => {
+      expect(parseCli([exe, '--borderless']).borderless).toBe(true);
+    });
+
+    it('parses --url as the first user arg', () => {
+      // Regression: pre-fix, slice(2) dropped --url and left just the URL
+      // string, which the loop then couldn't associate with any flag — so the
+      // packaged .exe silently loaded welcome.html instead of the requested URL.
+      expect(parseCli([exe, '--url', 'https://x/y']).url).toBe('https://x/y');
+    });
+
+    it('parses --borderless + --url together (the take-day command)', () => {
+      const cli = parseCli([exe, '--borderless', '--url', 'https://x/y?z=1']);
+      expect(cli.borderless).toBe(true);
+      expect(cli.url).toBe('https://x/y?z=1');
+    });
+
+    it('parses --url=value equals form as first user arg', () => {
+      expect(parseCli([exe, '--url=https://x/y']).url).toBe('https://x/y');
+    });
+
+    it('picks up a positional scene file as first user arg', () => {
+      expect(parseCli([exe, 'shots/hero.json']).sceneFile).toBe('shots/hero.json');
+    });
+  });
 });
